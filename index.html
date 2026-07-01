@@ -1,151 +1,39 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏠 童家大院在线</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #f5f5f5; padding-bottom: 50px; }
-        
-        .header { background: linear-gradient(135deg, #07c160, #10d070); padding: 30px 20px; text-align: center; color: white; }
-        .header h1 { font-size: 24px; }
-        .header .subtitle { opacity: 0.9; font-size: 12px; margin-top: 5px; }
-        
-        .card { background: white; margin: 15px; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-        
-        .login-title { text-align: center; font-size: 18px; font-weight: bold; margin-bottom: 15px; }
-        .name-input { width: 100%; height: 45px; border: 1px solid #ddd; border-radius: 8px; padding: 0 15px; font-size: 16px; margin-bottom: 15px; text-align: center; }
-        .btn-login { width: 100%; height: 45px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; color: white; background: #07c160; }
-        
-        .user-info { display: flex; align-items: center; }
-        .avatar { width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #ffd700, #ff8c00); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: bold; margin-right: 15px; }
-        .user-name { font-size: 16px; font-weight: bold; }
-        .user-streak { font-size: 13px; color: #ff6b35; }
-        
-        .btn-checkin { width: 100%; height: 45px; border: none; border-radius: 10px; font-size: 15px; font-weight: bold; color: white; background: #07c160; margin-top: 15px; }
-        .btn-checkin.checked { background: #ccc; color: #888; }
-        
-        .rank-header { background: linear-gradient(135deg, #ffd700, #ff8c00); color: white; padding: 12px 15px; font-weight: bold; display: flex; justify-content: space-between; border-radius: 12px 12px 0 0; margin: -20px -20px 15px -20px; }
-        
-        .rank-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
-        .rank-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; margin-right: 10px; background: #f5f5f5; color: #999; }
-        .rank-num:nth-child(1) { background: #ffd700; color: white; }
-        .rank-avatar { width: 32px; height: 32px; border-radius: 50%; background: #07c160; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; margin-right: 10px; }
-        .rank-name { flex: 1; font-size: 14px; }
-        .rank-name.red { color: #dc3545; }
-        .rank-streak { font-size: 12px; color: #ff6b35; }
-        
-        .floating { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; overflow: hidden; }
-        .floating-name { position: absolute; font-weight: bold; animation: float 6s ease-in-out infinite; white-space: nowrap; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-30px); } }
-        
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 100; align-items: center; justify-content: center; }
-        .modal.show { display: flex; }
-        .modal-content { background: white; border-radius: 15px; padding: 30px; text-align: center; margin: 20px; }
-        .modal-icon { font-size: 50px; }
-        .modal-title { font-size: 18px; font-weight: bold; color: #07c160; margin-top: 10px; }
-    </style>
-</head>
-<body>
-    <div class="floating" id="floating"></div>
-    
-    <div class="header">
-        <h1>🏠 童家大院在线</h1>
-        <div class="subtitle">坚持在线，看看谁最活跃！</div>
-    </div>
-    
-    <div class="card" id="loginCard">
-        <div class="login-title">🏠 欢迎加入童家大院</div>
-        <input class="name-input" id="nameInput" placeholder="请输入昵称" maxlength="10">
-        <button class="btn-login" onclick="login()">开始在线</button>
-    </div>
-    
-    <div class="card" id="userCard" style="display:none;">
-        <div class="user-info">
-            <div class="avatar" id="userAvatar">张</div>
-            <div>
-                <div class="user-name" id="userName">张三</div>
-                <div class="user-streak">🔥 连续在线 <span id="streakDays">0</span> 天</div>
-            </div>
-        </div>
-        <button class="btn-checkin" id="checkinBtn" onclick="doCheckin()">立即在线</button>
-    </div>
-    
-    <div class="card">
-        <div class="rank-header">
-            <span>👥 今日在线榜</span>
-            <span id="todayCount">0人</span>
-        </div>
-        <div id="rankList"></div>
-    </div>
-    
-    <div class="modal" id="successModal">
-        <div class="modal-content">
-            <div class="modal-icon">✅</div>
-            <div class="modal-title">在线成功！</div>
-        </div>
-    </div>
 
-    <script>
-        const API_URL = 'https://api.jsonbin.io/v3/b/685a8a8ead8a6b6d6ddc3d2a';
-        const API_KEY = '***';
-        let currentUser = null;
 
-        function getToday() {
-            const d = new Date();
-            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-        }
-        
-        function login() {
-            const name = document.getElementById('nameInput').value.trim();
-            if (!name) return alert('请输入昵称');
-            currentUser = { name, streakDays: 0, totalCheckins: 0, lastCheckin: null };
-            localStorage.setItem('tongjiadayuan_user', JSON.stringify(currentUser));
-            checkUser();
-            saveData();
-        }
-        
-        function checkUser() {
-            const data = localStorage.getItem('tongjiadayuan_user');
-            if (data) {
-                currentUser = JSON.parse(data);
-                document.getElementById('loginCard').style.display = 'none';
-                document.getElementById('userCard').style.display = 'block';
-                document.getElementById('userName').textContent = currentUser.name;
-                document.getElementById('userAvatar').textContent = currentUser.name.charAt(0);
-                document.getElementById('streakDays').textContent = currentUser.streakDays || 0;
-                updateBtn();
-            }
-        }
-        
-        function updateBtn() {
-            const btn = document.getElementById('checkinBtn');
-            const last = currentUser.lastCheckin ? currentUser.lastCheckin.split(' ')[0] : null;
-            if (last === getToday()) {
-                btn.className = 'btn-checkin checked';
-                btn.textContent = '今日已在线 ✓';
-                btn.disabled = true;
-            } else {
-                btn.className = 'btn-checkin';
-                btn.textContent = '立即在线';
-                btn.disabled = false;
-            }
-        }
-        
-        async function doCheckin() {
-            if (!currentUser) return;
-            if (currentUser.lastCheckin && currentUser.lastCheckin.split(' ')[0] === getToday()) return;
-            
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.getFullYear() + '-' + String(yesterday.getMonth()+1).padStart(2,'0') + '-' + String(yesterday.getDate()).padStart(2,'0');
-            const lastDate = currentUser.lastCheckin ? currentUser.lastCheckin.split(' ')[0] : null;
-            
-            if (lastDate === yesterdayStr) currentUser.streakDays++;
-            else if (lastDate !== getToday()) currentUser.streakDays = 1;
-            
-            currentUser.totalCheckins++;
-            currentUser.lastCheckin = getToday() + ' ' + new Date().toLocaleTimeString('zh-CN', {hour:'2-digit', minute:'2-digit'});
-       
-...(truncated)...
+
+🏠 童家大院在线
+
+坚持在线，看看谁最活跃！
+
+
+💚
+
+点击右上角「...」分享到微信群
+让群友看到你的在线记录
+
+
+🏠 欢迎加入童家大院
+ 开始在线 
+
+
+
+
+
+
+
+
+
+
+👥 今日在线榜 0人 
+
+
+💡 提示：分享链接到群里，群友打开就能看到你！ 
+
+
+
+
+
+
+
+
+ 
